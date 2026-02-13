@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Space Explorer</title>
+    <title>Deep Space Journey</title>
     <style>
         * {
             margin: 0;
@@ -13,8 +13,8 @@
 
         body {
             overflow: hidden;
-            background: radial-gradient(ellipse at bottom, #1B2735 0%, #090A0F 100%);
-            font-family: 'Arial', sans-serif;
+            background: #000;
+            font-family: 'Courier New', monospace;
         }
 
         #canvas {
@@ -23,220 +23,389 @@
             left: 0;
             width: 100%;
             height: 100%;
+            background: radial-gradient(ellipse at center, #0a0e27 0%, #000000 100%);
         }
 
-        .content {
-            position: relative;
-            z-index: 10;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            color: white;
-            text-align: center;
-        }
-
-        h1 {
-            font-size: 4rem;
-            margin-bottom: 1rem;
-            text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
-            animation: float 3s ease-in-out infinite;
-        }
-
-        p {
-            font-size: 1.5rem;
-            opacity: 0.8;
-            text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
-        }
-
-        @keyframes float {
-            0%, 100% {
-                transform: translateY(0px);
-            }
-            50% {
-                transform: translateY(-20px);
-            }
-        }
-
-        .planet {
+        .nebula {
             position: absolute;
-            border-radius: 50%;
-            animation: orbit 20s linear infinite;
+            width: 100%;
+            height: 100%;
+            opacity: 0.3;
+            background:
+                radial-gradient(ellipse at 20% 30%, rgba(138, 43, 226, 0.3) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 70%, rgba(0, 191, 255, 0.3) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 50%, rgba(255, 20, 147, 0.2) 0%, transparent 60%);
+            filter: blur(60px);
+            animation: nebulaDrift 60s ease-in-out infinite alternate;
         }
 
-        .planet1 {
-            width: 100px;
-            height: 100px;
-            background: radial-gradient(circle at 30% 30%, #ff6b6b, #c44569);
-            top: 20%;
-            left: 10%;
-            box-shadow: 0 0 50px rgba(255, 107, 107, 0.5);
+        @keyframes nebulaDrift {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(30px, -30px) scale(1.1); }
         }
 
-        .planet2 {
-            width: 150px;
-            height: 150px;
-            background: radial-gradient(circle at 30% 30%, #4facfe, #00f2fe);
-            bottom: 20%;
-            right: 15%;
-            animation: orbit 30s linear infinite reverse;
-            box-shadow: 0 0 60px rgba(79, 172, 254, 0.5);
+        .ui {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            color: rgba(255, 255, 255, 0.8);
+            z-index: 100;
+            font-size: 12px;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+            pointer-events: none;
         }
 
-        @keyframes orbit {
-            0% {
-                transform: rotate(0deg) translateX(50px) rotate(0deg);
-            }
-            100% {
-                transform: rotate(360deg) translateX(50px) rotate(-360deg);
-            }
+        .ui-line {
+            margin: 5px 0;
+            opacity: 0;
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+
+        .ui-line:nth-child(1) { animation-delay: 0.5s; }
+        .ui-line:nth-child(2) { animation-delay: 1s; }
+        .ui-line:nth-child(3) { animation-delay: 1.5s; }
+        .ui-line:nth-child(4) { animation-delay: 2s; }
+
+        @keyframes fadeIn {
+            to { opacity: 1; }
+        }
+
+        .coordinates {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            color: rgba(0, 255, 255, 0.6);
+            font-size: 11px;
+            z-index: 100;
+            text-align: right;
+            pointer-events: none;
+        }
+
+        .scanner {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(to right, transparent, rgba(0, 255, 255, 0.5), transparent);
+            animation: scan 4s linear infinite;
+            pointer-events: none;
+            z-index: 50;
+        }
+
+        @keyframes scan {
+            0% { transform: translateY(0); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(100vh); opacity: 0; }
+        }
+
+        .info {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: white;
+            z-index: 10;
+            opacity: 0;
+            animation: titleAppear 2s ease-out 3s forwards;
+        }
+
+        @keyframes titleAppear {
+            to { opacity: 1; }
+        }
+
+        .info h1 {
+            font-size: 3rem;
+            letter-spacing: 8px;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+            text-shadow:
+                0 0 10px rgba(255, 255, 255, 0.8),
+                0 0 20px rgba(0, 255, 255, 0.6),
+                0 0 30px rgba(0, 255, 255, 0.4);
+        }
+
+        .info p {
+            font-size: 1rem;
+            opacity: 0.7;
+            letter-spacing: 3px;
+        }
+
+        .crosshair {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            width: 40px;
+            height: 40px;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 90;
+        }
+
+        .crosshair::before,
+        .crosshair::after {
+            content: '';
+            position: absolute;
+            background: rgba(0, 255, 255, 0.3);
+        }
+
+        .crosshair::before {
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 1px;
+        }
+
+        .crosshair::after {
+            left: 50%;
+            top: 0;
+            width: 1px;
+            height: 100%;
+        }
+
+        @media (max-width: 768px) {
+            .info h1 { font-size: 2rem; }
+            .ui { font-size: 10px; }
         }
     </style>
 </head>
 <body>
+    <div class="nebula"></div>
     <canvas id="canvas"></canvas>
+    <div class="scanner"></div>
+    <div class="crosshair"></div>
 
-    <div class="planet planet1"></div>
-    <div class="planet planet2"></div>
+    <div class="ui">
+        <div class="ui-line">SYSTEM: ONLINE</div>
+        <div class="ui-line">HYPERDRIVE: READY</div>
+        <div class="ui-line">SHIELDS: 100%</div>
+        <div class="ui-line">SCANNING: ACTIVE</div>
+    </div>
 
-    <div class="content">
-        <h1>🌌 Space Explorer</h1>
-        <p>Journey through the cosmos</p>
+    <div class="coordinates">
+        <div>X: <span id="coordX">0.000</span></div>
+        <div>Y: <span id="coordY">0.000</span></div>
+        <div>VELOCITY: <span id="velocity">0.00c</span></div>
+    </div>
+
+    <div class="info">
+        <h1>DEEP SPACE</h1>
+        <p>INTERSTELLAR EXPLORATION</p>
     </div>
 
     <script>
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
 
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
+        let W = canvas.width = window.innerWidth;
+        let H = canvas.height = window.innerHeight;
 
-        // Star class
+        // Camera and movement
+        let cameraZ = 0;
+        let cameraSpeed = 0.5;
+        let mouseX = 0;
+        let mouseY = 0;
+        let targetSpeed = 0.5;
+
+        // Particle system for stars
         class Star {
-            constructor() {
-                this.x = Math.random() * canvas.width;
-                this.y = Math.random() * canvas.height;
-                this.size = Math.random() * 2;
-                this.speedX = (Math.random() - 0.5) * 0.5;
-                this.speedY = (Math.random() - 0.5) * 0.5;
-                this.opacity = Math.random();
-                this.twinkleSpeed = Math.random() * 0.02;
-            }
-
-            update() {
-                this.x += this.speedX;
-                this.y += this.speedY;
-
-                // Wrap around screen
-                if (this.x < 0) this.x = canvas.width;
-                if (this.x > canvas.width) this.x = 0;
-                if (this.y < 0) this.y = canvas.height;
-                if (this.y > canvas.height) this.y = 0;
-
-                // Twinkle effect
-                this.opacity += this.twinkleSpeed;
-                if (this.opacity > 1 || this.opacity < 0.3) {
-                    this.twinkleSpeed *= -1;
-                }
-            }
-
-            draw() {
-                ctx.fillStyle = `rgba(255, 255, 255, ${this.opacity})`;
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                ctx.fill();
-            }
-        }
-
-        // Create stars
-        const stars = [];
-        for (let i = 0; i < 300; i++) {
-            stars.push(new Star());
-        }
-
-        // Shooting star class
-        class ShootingStar {
             constructor() {
                 this.reset();
             }
 
             reset() {
-                this.x = Math.random() * canvas.width;
-                this.y = 0;
-                this.length = Math.random() * 80 + 20;
-                this.speed = Math.random() * 10 + 5;
-                this.opacity = 1;
+                this.x = (Math.random() - 0.5) * W * 3;
+                this.y = (Math.random() - 0.5) * H * 3;
+                this.z = Math.random() * 2000 + 1000;
+                this.originalZ = this.z;
+                this.size = Math.random() * 2;
+                this.color = Math.random() > 0.5 ?
+                    `rgba(${150 + Math.random() * 105}, ${150 + Math.random() * 105}, 255, ` :
+                    `rgba(255, ${150 + Math.random() * 105}, ${150 + Math.random() * 105}, `;
             }
 
             update() {
-                this.x += this.speed;
-                this.y += this.speed;
-                this.opacity -= 0.01;
+                this.z -= cameraSpeed * 2;
 
-                if (this.opacity <= 0 || this.x > canvas.width || this.y > canvas.height) {
-                    if (Math.random() < 0.01) { // 1% chance to respawn
-                        this.reset();
-                    }
+                if (this.z < 1) {
+                    this.reset();
+                    this.z = 2000;
                 }
             }
 
             draw() {
-                if (this.opacity > 0) {
-                    ctx.strokeStyle = `rgba(255, 255, 255, ${this.opacity})`;
-                    ctx.lineWidth = 2;
+                const x = (this.x / this.z) * 600 + W / 2;
+                const y = (this.y / this.z) * 600 + H / 2;
+
+                if (x < -50 || x > W + 50 || y < -50 || y > H + 50) {
+                    return;
+                }
+
+                const size = (1 - this.z / 2000) * this.size * 3;
+                const opacity = Math.min((2000 - this.z) / 2000, 1);
+
+                // Star glow
+                const gradient = ctx.createRadialGradient(x, y, 0, x, y, size * 3);
+                gradient.addColorStop(0, this.color + opacity + ')');
+                gradient.addColorStop(0.3, this.color + (opacity * 0.5) + ')');
+                gradient.addColorStop(1, this.color + '0)');
+
+                ctx.fillStyle = gradient;
+                ctx.fillRect(x - size * 3, y - size * 3, size * 6, size * 6);
+
+                // Star core
+                ctx.fillStyle = this.color + opacity + ')';
+                ctx.beginPath();
+                ctx.arc(x, y, Math.max(size, 0.5), 0, Math.PI * 2);
+                ctx.fill();
+
+                // Motion blur
+                if (cameraSpeed > 1) {
+                    const prevZ = this.z + cameraSpeed * 2;
+                    const prevX = (this.x / prevZ) * 600 + W / 2;
+                    const prevY = (this.y / prevZ) * 600 + H / 2;
+
+                    ctx.strokeStyle = this.color + (opacity * 0.3) + ')';
+                    ctx.lineWidth = size * 0.5;
                     ctx.beginPath();
-                    ctx.moveTo(this.x, this.y);
-                    ctx.lineTo(this.x - this.length, this.y - this.length);
+                    ctx.moveTo(prevX, prevY);
+                    ctx.lineTo(x, y);
                     ctx.stroke();
                 }
             }
         }
 
-        // Create shooting stars
-        const shootingStars = [];
-        for (let i = 0; i < 3; i++) {
-            shootingStars.push(new ShootingStar());
+        // Asteroids/debris
+        class Asteroid {
+            constructor() {
+                this.reset();
+            }
+
+            reset() {
+                this.x = (Math.random() - 0.5) * W * 2;
+                this.y = (Math.random() - 0.5) * H * 2;
+                this.z = Math.random() * 1500 + 500;
+                this.rotationSpeed = (Math.random() - 0.5) * 0.05;
+                this.rotation = Math.random() * Math.PI * 2;
+                this.size = Math.random() * 4 + 2;
+                this.vertices = Math.floor(Math.random() * 4) + 5;
+            }
+
+            update() {
+                this.z -= cameraSpeed;
+                this.rotation += this.rotationSpeed;
+
+                if (this.z < 1) {
+                    this.reset();
+                    this.z = 2000;
+                }
+            }
+
+            draw() {
+                const x = (this.x / this.z) * 600 + W / 2;
+                const y = (this.y / this.z) * 600 + H / 2;
+
+                if (x < -100 || x > W + 100 || y < -100 || y > H + 100) {
+                    return;
+                }
+
+                const size = (1 - this.z / 2000) * this.size * 5;
+                const opacity = Math.min((2000 - this.z) / 2000, 1) * 0.6;
+
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.rotate(this.rotation);
+
+                ctx.beginPath();
+                for (let i = 0; i < this.vertices; i++) {
+                    const angle = (i / this.vertices) * Math.PI * 2;
+                    const r = size * (0.8 + Math.random() * 0.4);
+                    const px = Math.cos(angle) * r;
+                    const py = Math.sin(angle) * r;
+                    if (i === 0) ctx.moveTo(px, py);
+                    else ctx.lineTo(px, py);
+                }
+                ctx.closePath();
+
+                ctx.fillStyle = `rgba(100, 100, 120, ${opacity})`;
+                ctx.fill();
+                ctx.strokeStyle = `rgba(150, 150, 180, ${opacity * 0.5})`;
+                ctx.lineWidth = 0.5;
+                ctx.stroke();
+
+                ctx.restore();
+            }
+        }
+
+        // Create particles
+        const stars = Array.from({ length: 1500 }, () => new Star());
+        const asteroids = Array.from({ length: 30 }, () => new Asteroid());
+
+        // Mouse interaction
+        document.addEventListener('mousemove', (e) => {
+            mouseX = (e.clientX / W - 0.5) * 2;
+            mouseY = (e.clientY / H - 0.5) * 2;
+        });
+
+        // Speed control with mouse wheel
+        document.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            targetSpeed = Math.max(0.1, Math.min(targetSpeed + e.deltaY * 0.001, 10));
+        }, { passive: false });
+
+        // Update coordinates UI
+        function updateUI() {
+            document.getElementById('coordX').textContent = (mouseX * 100).toFixed(3);
+            document.getElementById('coordY').textContent = (mouseY * 100).toFixed(3);
+            document.getElementById('velocity').textContent = (cameraSpeed * 0.1).toFixed(2) + 'c';
         }
 
         // Animation loop
         function animate() {
-            ctx.fillStyle = 'rgba(9, 10, 15, 0.1)';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            // Fade effect for motion blur
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+            ctx.fillRect(0, 0, W, H);
+
+            // Smooth speed transition
+            cameraSpeed += (targetSpeed - cameraSpeed) * 0.02;
+
+            // Add parallax effect based on mouse position
+            ctx.save();
+            ctx.translate(mouseX * 20, mouseY * 20);
+
+            // Update and draw
+            asteroids.forEach(asteroid => {
+                asteroid.update();
+                asteroid.draw();
+            });
 
             stars.forEach(star => {
                 star.update();
                 star.draw();
             });
 
-            shootingStars.forEach(star => {
-                star.update();
-                star.draw();
-            });
+            ctx.restore();
 
+            updateUI();
             requestAnimationFrame(animate);
         }
 
-        animate();
-
         // Resize handler
         window.addEventListener('resize', () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+            W = canvas.width = window.innerWidth;
+            H = canvas.height = window.innerHeight;
         });
 
-        // Mouse interaction
-        canvas.addEventListener('mousemove', (e) => {
-            const star = new Star();
-            star.x = e.clientX;
-            star.y = e.clientY;
-            star.size = Math.random() * 3 + 1;
-            stars.push(star);
+        // Start animation
+        animate();
 
-            // Remove old stars
-            if (stars.length > 500) {
-                stars.shift();
-            }
+        // Keyboard controls
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowUp') targetSpeed = Math.min(targetSpeed + 0.5, 10);
+            if (e.key === 'ArrowDown') targetSpeed = Math.max(targetSpeed - 0.5, 0.1);
+            if (e.key === ' ') targetSpeed = targetSpeed > 2 ? 0.5 : 5;
         });
     </script>
 </body>
