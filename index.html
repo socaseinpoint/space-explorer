@@ -14,7 +14,6 @@
         body {
             overflow: hidden;
             background: #000;
-            font-family: 'Courier New', monospace;
             touch-action: none;
         }
 
@@ -25,113 +24,10 @@
             width: 100%;
             height: 100%;
         }
-
-        .hud {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            color: rgba(0, 255, 255, 0.8);
-            font-size: 12px;
-            z-index: 100;
-            text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
-            pointer-events: none;
-        }
-
-        .hud-line {
-            margin: 5px 0;
-            opacity: 0;
-            animation: fadeIn 0.5s ease-out forwards;
-        }
-
-        .hud-line:nth-child(1) { animation-delay: 0.5s; }
-        .hud-line:nth-child(2) { animation-delay: 1s; }
-        .hud-line:nth-child(3) { animation-delay: 1.5s; }
-
-        @keyframes fadeIn {
-            to { opacity: 1; }
-        }
-
-        .speed {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            color: rgba(0, 255, 255, 0.6);
-            font-size: 24px;
-            z-index: 100;
-            text-shadow: 0 0 20px rgba(0, 255, 255, 0.8);
-            pointer-events: none;
-        }
-
-        .title {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
-            color: white;
-            z-index: 10;
-            opacity: 0;
-            animation: titleAppear 2s ease-out 2s forwards, titleFade 2s ease-out 6s forwards;
-            pointer-events: none;
-        }
-
-        .title h1 {
-            font-size: 4rem;
-            letter-spacing: 12px;
-            text-transform: uppercase;
-            text-shadow:
-                0 0 20px rgba(255, 255, 255, 0.8),
-                0 0 40px rgba(0, 255, 255, 0.6);
-        }
-
-        .title p {
-            margin-top: 20px;
-            font-size: 1.2rem;
-            letter-spacing: 4px;
-            opacity: 0.7;
-        }
-
-        @keyframes titleAppear {
-            to { opacity: 1; }
-        }
-
-        @keyframes titleFade {
-            to { opacity: 0; }
-        }
-
-        .loading {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: rgba(0, 255, 255, 0.8);
-            font-size: 16px;
-            z-index: 200;
-        }
-
-        @media (max-width: 768px) {
-            .title h1 { font-size: 2.5rem; }
-            .hud { font-size: 10px; }
-            .speed { font-size: 18px; }
-        }
     </style>
 </head>
 <body>
     <div id="canvas-container"></div>
-    <div class="loading" id="loading">INITIALIZING SYSTEMS...</div>
-
-    <div class="hud">
-        <div class="hud-line">▸ HYPERDRIVE: ACTIVE</div>
-        <div class="hud-line">▸ SHIELDS: NOMINAL</div>
-        <div class="hud-line">▸ SENSORS: ONLINE</div>
-    </div>
-
-    <div class="speed" id="speed">0.0c</div>
-
-    <div class="title">
-        <h1>DEEP SPACE</h1>
-        <p>Journey Beyond The Known</p>
-    </div>
 
     <script type="importmap">
     {
@@ -166,9 +62,12 @@
 
         const bloomPass = new UnrealBloomPass(
             new THREE.Vector2(window.innerWidth, window.innerHeight),
-            1.5, 0.4, 0.85
+            2.0, 0.3, 0.9
         );
         composer.addPass(bloomPass);
+
+        // Motion blur by rendering semi-transparent frames
+        renderer.setClearAlpha(0.85);
 
         // Star field
         const starGeometry = new THREE.BufferGeometry();
@@ -180,10 +79,10 @@
         for (let i = 0; i < starCount; i++) {
             const i3 = i * 3;
 
-            // Position
-            positions[i3] = (Math.random() - 0.5) * 2000;
-            positions[i3 + 1] = (Math.random() - 0.5) * 2000;
-            positions[i3 + 2] = (Math.random() - 0.5) * 2000;
+            // Position - closer and more spread
+            positions[i3] = (Math.random() - 0.5) * 1000;
+            positions[i3 + 1] = (Math.random() - 0.5) * 1000;
+            positions[i3 + 2] = Math.random() * 1000 - 500;
 
             // Color (blue-white or red-white)
             const colorChoice = Math.random();
@@ -197,7 +96,7 @@
                 colors[i3 + 2] = 0.8 + Math.random() * 0.2;
             }
 
-            sizes[i] = Math.random() * 3 + 0.5;
+            sizes[i] = Math.random() * 5 + 1;
         }
 
         starGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
@@ -205,10 +104,10 @@
         starGeometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
 
         const starMaterial = new THREE.PointsMaterial({
-            size: 2,
+            size: 4,
             vertexColors: true,
             transparent: true,
-            opacity: 0.9,
+            opacity: 1.0,
             sizeAttenuation: true,
             blending: THREE.AdditiveBlending
         });
@@ -282,8 +181,8 @@
         scene.add(pointLight);
 
         // Movement variables
-        let speed = 0.5;
-        let targetSpeed = 0.5;
+        let speed = 5;
+        let targetSpeed = 5;
         let autoSpeed = true;
         let autoSpeedTime = 0;
 
@@ -361,9 +260,9 @@
 
             // Auto-speed variation
             if (autoSpeed) {
-                autoSpeedTime += 0.003;
-                const variation = Math.sin(autoSpeedTime) * 0.3;
-                targetSpeed = 0.8 + variation + Math.abs(Math.sin(autoSpeedTime * 0.2)) * 0.5;
+                autoSpeedTime += 0.005;
+                const variation = Math.sin(autoSpeedTime) * 2;
+                targetSpeed = 5 + variation + Math.abs(Math.sin(autoSpeedTime * 0.3)) * 3;
             }
 
             // Smooth speed transition
@@ -378,18 +277,25 @@
             // Move forward
             camera.position.z -= speed;
 
-            // Stars movement
+            // Stars movement with motion streaking
             const starPositions = stars.geometry.attributes.position.array;
+            const starSizes = stars.geometry.attributes.size.array;
             for (let i = 0; i < starPositions.length; i += 3) {
-                starPositions[i + 2] += speed;
+                starPositions[i + 2] += speed * 2;
+
+                // Make stars stretch based on speed
+                const idx = i / 3;
+                starSizes[idx] = (Math.random() * 5 + 1) * (1 + speed * 0.3);
 
                 // Reset stars that are too close
-                if (starPositions[i + 2] > 500) {
-                    starPositions[i + 2] = -500;
+                if (starPositions[i + 2] > 200) {
+                    starPositions[i + 2] = -1000;
+                    starPositions[i] = (Math.random() - 0.5) * 1000;
+                    starPositions[i + 1] = (Math.random() - 0.5) * 1000;
                 }
             }
             stars.geometry.attributes.position.needsUpdate = true;
-            stars.rotation.y += 0.0001;
+            stars.geometry.attributes.size.needsUpdate = true;
 
             // Nebula clouds
             nebulaClouds.forEach((cloud, i) => {
@@ -416,9 +322,6 @@
                 }
             });
 
-            // Update HUD
-            document.getElementById('speed').textContent = (speed * 2).toFixed(1) + 'c';
-
             composer.render();
         }
 
@@ -431,7 +334,6 @@
         });
 
         // Start
-        document.getElementById('loading').style.display = 'none';
         animate();
     </script>
 </body>
