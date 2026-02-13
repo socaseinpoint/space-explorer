@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Deep Space Journey</title>
+    <title>Deep Space - Three.js</title>
     <style>
         * {
             margin: 0;
@@ -15,92 +15,54 @@
             overflow: hidden;
             background: #000;
             font-family: 'Courier New', monospace;
+            touch-action: none;
         }
 
-        #canvas {
+        #canvas-container {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: radial-gradient(ellipse at center, #0a0e27 0%, #000000 100%);
         }
 
-        .nebula {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            opacity: 0.3;
-            background:
-                radial-gradient(ellipse at 20% 30%, rgba(138, 43, 226, 0.3) 0%, transparent 50%),
-                radial-gradient(ellipse at 80% 70%, rgba(0, 191, 255, 0.3) 0%, transparent 50%),
-                radial-gradient(ellipse at 50% 50%, rgba(255, 20, 147, 0.2) 0%, transparent 60%);
-            filter: blur(60px);
-            animation: nebulaDrift 60s ease-in-out infinite alternate;
-        }
-
-        @keyframes nebulaDrift {
-            0% { transform: translate(0, 0) scale(1); }
-            100% { transform: translate(30px, -30px) scale(1.1); }
-        }
-
-        .ui {
+        .hud {
             position: fixed;
             top: 20px;
             left: 20px;
-            color: rgba(255, 255, 255, 0.8);
-            z-index: 100;
+            color: rgba(0, 255, 255, 0.8);
             font-size: 12px;
+            z-index: 100;
             text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
             pointer-events: none;
         }
 
-        .ui-line {
+        .hud-line {
             margin: 5px 0;
             opacity: 0;
             animation: fadeIn 0.5s ease-out forwards;
         }
 
-        .ui-line:nth-child(1) { animation-delay: 0.5s; }
-        .ui-line:nth-child(2) { animation-delay: 1s; }
-        .ui-line:nth-child(3) { animation-delay: 1.5s; }
-        .ui-line:nth-child(4) { animation-delay: 2s; }
+        .hud-line:nth-child(1) { animation-delay: 0.5s; }
+        .hud-line:nth-child(2) { animation-delay: 1s; }
+        .hud-line:nth-child(3) { animation-delay: 1.5s; }
 
         @keyframes fadeIn {
             to { opacity: 1; }
         }
 
-        .coordinates {
+        .speed {
             position: fixed;
-            bottom: 20px;
+            top: 20px;
             right: 20px;
             color: rgba(0, 255, 255, 0.6);
-            font-size: 11px;
+            font-size: 24px;
             z-index: 100;
-            text-align: right;
+            text-shadow: 0 0 20px rgba(0, 255, 255, 0.8);
             pointer-events: none;
         }
 
-        .scanner {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 2px;
-            background: linear-gradient(to right, transparent, rgba(0, 255, 255, 0.5), transparent);
-            animation: scan 4s linear infinite;
-            pointer-events: none;
-            z-index: 50;
-        }
-
-        @keyframes scan {
-            0% { transform: translateY(0); opacity: 0; }
-            10% { opacity: 1; }
-            90% { opacity: 1; }
-            100% { transform: translateY(100vh); opacity: 0; }
-        }
-
-        .info {
+        .title {
             position: fixed;
             top: 50%;
             left: 50%;
@@ -109,523 +71,368 @@
             color: white;
             z-index: 10;
             opacity: 0;
-            animation: titleAppear 2s ease-out 3s forwards;
+            animation: titleAppear 2s ease-out 2s forwards, titleFade 2s ease-out 6s forwards;
+            pointer-events: none;
+        }
+
+        .title h1 {
+            font-size: 4rem;
+            letter-spacing: 12px;
+            text-transform: uppercase;
+            text-shadow:
+                0 0 20px rgba(255, 255, 255, 0.8),
+                0 0 40px rgba(0, 255, 255, 0.6);
+        }
+
+        .title p {
+            margin-top: 20px;
+            font-size: 1.2rem;
+            letter-spacing: 4px;
+            opacity: 0.7;
         }
 
         @keyframes titleAppear {
             to { opacity: 1; }
         }
 
-        .info h1 {
-            font-size: 3rem;
-            letter-spacing: 8px;
-            text-transform: uppercase;
-            margin-bottom: 20px;
-            text-shadow:
-                0 0 10px rgba(255, 255, 255, 0.8),
-                0 0 20px rgba(0, 255, 255, 0.6),
-                0 0 30px rgba(0, 255, 255, 0.4);
+        @keyframes titleFade {
+            to { opacity: 0; }
         }
 
-        .info p {
-            font-size: 1rem;
-            opacity: 0.7;
-            letter-spacing: 3px;
-        }
-
-        .crosshair {
+        .loading {
             position: fixed;
             top: 50%;
             left: 50%;
-            width: 40px;
-            height: 40px;
             transform: translate(-50%, -50%);
-            pointer-events: none;
-            z-index: 90;
-        }
-
-        .crosshair::before,
-        .crosshair::after {
-            content: '';
-            position: absolute;
-            background: rgba(0, 255, 255, 0.3);
-        }
-
-        .crosshair::before {
-            top: 50%;
-            left: 0;
-            width: 100%;
-            height: 1px;
-        }
-
-        .crosshair::after {
-            left: 50%;
-            top: 0;
-            width: 1px;
-            height: 100%;
-        }
-
-        .controls {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            color: rgba(255, 255, 255, 0.5);
-            font-size: 10px;
-            z-index: 100;
-            pointer-events: none;
-            line-height: 1.6;
+            color: rgba(0, 255, 255, 0.8);
+            font-size: 16px;
+            z-index: 200;
         }
 
         @media (max-width: 768px) {
-            .info h1 { font-size: 2rem; }
-            .ui { font-size: 10px; }
-            .controls { font-size: 9px; }
+            .title h1 { font-size: 2.5rem; }
+            .hud { font-size: 10px; }
+            .speed { font-size: 18px; }
         }
     </style>
 </head>
 <body>
-    <div class="nebula"></div>
-    <canvas id="canvas"></canvas>
-    <div class="scanner"></div>
-    <div class="crosshair"></div>
+    <div id="canvas-container"></div>
+    <div class="loading" id="loading">INITIALIZING SYSTEMS...</div>
 
-    <div class="ui">
-        <div class="ui-line">SYSTEM: ONLINE</div>
-        <div class="ui-line">HYPERDRIVE: READY</div>
-        <div class="ui-line">SHIELDS: 100%</div>
-        <div class="ui-line">SCANNING: ACTIVE</div>
+    <div class="hud">
+        <div class="hud-line">▸ HYPERDRIVE: ACTIVE</div>
+        <div class="hud-line">▸ SHIELDS: NOMINAL</div>
+        <div class="hud-line">▸ SENSORS: ONLINE</div>
     </div>
 
-    <div class="coordinates">
-        <div>X: <span id="coordX">0.000</span></div>
-        <div>Y: <span id="coordY">0.000</span></div>
-        <div>VELOCITY: <span id="velocity">0.00c</span></div>
-    </div>
+    <div class="speed" id="speed">0.0c</div>
 
-    <div class="controls">
-        <div>🚀 AUTO-PILOT: Active (Double tap/SPACE to toggle)</div>
-        <div>🖱️ MOUSE: Move to look around</div>
-        <div>⌨️ KEYS: ↑↓ Manual speed</div>
-        <div>📱 TOUCH: Swipe to control</div>
-        <div>🎯 GYRO: Tilt for parallax</div>
-    </div>
-
-    <div class="info">
+    <div class="title">
         <h1>DEEP SPACE</h1>
-        <p>INTERSTELLAR EXPLORATION</p>
+        <p>Journey Beyond The Known</p>
     </div>
 
-    <script>
-        const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d');
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
 
-        let W = canvas.width = window.innerWidth;
-        let H = canvas.height = window.innerHeight;
+    <script type="module">
+        import * as THREE from 'three';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 
-        // Camera and movement
-        let cameraZ = 0;
-        let cameraSpeed = 2;
+        // Scene setup
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x000000, 0.0003);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 3000);
+        camera.position.z = 5;
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+        // Post-processing
+        const composer = new EffectComposer(renderer);
+        composer.addPass(new RenderPass(scene, camera));
+
+        const bloomPass = new UnrealBloomPass(
+            new THREE.Vector2(window.innerWidth, window.innerHeight),
+            1.5, 0.4, 0.85
+        );
+        composer.addPass(bloomPass);
+
+        // Star field
+        const starGeometry = new THREE.BufferGeometry();
+        const starCount = 15000;
+        const positions = new Float32Array(starCount * 3);
+        const colors = new Float32Array(starCount * 3);
+        const sizes = new Float32Array(starCount);
+
+        for (let i = 0; i < starCount; i++) {
+            const i3 = i * 3;
+
+            // Position
+            positions[i3] = (Math.random() - 0.5) * 2000;
+            positions[i3 + 1] = (Math.random() - 0.5) * 2000;
+            positions[i3 + 2] = (Math.random() - 0.5) * 2000;
+
+            // Color (blue-white or red-white)
+            const colorChoice = Math.random();
+            if (colorChoice > 0.5) {
+                colors[i3] = 0.8 + Math.random() * 0.2;
+                colors[i3 + 1] = 0.8 + Math.random() * 0.2;
+                colors[i3 + 2] = 1.0;
+            } else {
+                colors[i3] = 1.0;
+                colors[i3 + 1] = 0.8 + Math.random() * 0.2;
+                colors[i3 + 2] = 0.8 + Math.random() * 0.2;
+            }
+
+            sizes[i] = Math.random() * 3 + 0.5;
+        }
+
+        starGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        starGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+        starGeometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+
+        const starMaterial = new THREE.PointsMaterial({
+            size: 2,
+            vertexColors: true,
+            transparent: true,
+            opacity: 0.9,
+            sizeAttenuation: true,
+            blending: THREE.AdditiveBlending
+        });
+
+        const stars = new THREE.Points(starGeometry, starMaterial);
+        scene.add(stars);
+
+        // Nebula clouds
+        const nebulaClouds = [];
+        for (let i = 0; i < 5; i++) {
+            const cloudGeometry = new THREE.SphereGeometry(100, 32, 32);
+            const cloudMaterial = new THREE.MeshBasicMaterial({
+                color: i % 2 === 0 ? 0x8a2be2 : 0x00bfff,
+                transparent: true,
+                opacity: 0.05,
+                side: THREE.BackSide
+            });
+            const cloud = new THREE.Mesh(cloudGeometry, cloudMaterial);
+            cloud.position.set(
+                (Math.random() - 0.5) * 500,
+                (Math.random() - 0.5) * 500,
+                (Math.random() - 0.5) * 500 - 300
+            );
+            nebulaClouds.push(cloud);
+            scene.add(cloud);
+        }
+
+        // Asteroids
+        const asteroids = [];
+        const asteroidGeometry = new THREE.DodecahedronGeometry(1, 0);
+        for (let i = 0; i < 100; i++) {
+            const material = new THREE.MeshStandardMaterial({
+                color: 0x555555,
+                roughness: 0.9,
+                metalness: 0.1,
+                emissive: 0x222222
+            });
+            const asteroid = new THREE.Mesh(asteroidGeometry, material);
+
+            const scale = Math.random() * 3 + 0.5;
+            asteroid.scale.set(scale, scale, scale);
+
+            asteroid.position.set(
+                (Math.random() - 0.5) * 500,
+                (Math.random() - 0.5) * 500,
+                (Math.random() - 0.5) * 1000 - 200
+            );
+
+            asteroid.rotation.set(
+                Math.random() * Math.PI,
+                Math.random() * Math.PI,
+                Math.random() * Math.PI
+            );
+
+            asteroid.userData.rotationSpeed = {
+                x: (Math.random() - 0.5) * 0.02,
+                y: (Math.random() - 0.5) * 0.02,
+                z: (Math.random() - 0.5) * 0.02
+            };
+
+            asteroids.push(asteroid);
+            scene.add(asteroid);
+        }
+
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
+        scene.add(ambientLight);
+
+        const pointLight = new THREE.PointLight(0xffffff, 1, 1000);
+        pointLight.position.set(0, 0, 0);
+        scene.add(pointLight);
+
+        // Movement variables
+        let speed = 0.5;
+        let targetSpeed = 0.5;
+        let autoSpeed = true;
+        let autoSpeedTime = 0;
+
         let mouseX = 0;
         let mouseY = 0;
-        let targetSpeed = 2;
+        let targetRotationY = 0;
+        let targetRotationX = 0;
 
-        // Particle system for stars
-        class Star {
-            constructor() {
-                this.reset();
-            }
-
-            reset() {
-                this.x = (Math.random() - 0.5) * W * 3;
-                this.y = (Math.random() - 0.5) * H * 3;
-                this.z = Math.random() * 2000 + 1000;
-                this.originalZ = this.z;
-                this.size = Math.random() * 2;
-                this.color = Math.random() > 0.5 ?
-                    `rgba(${150 + Math.random() * 105}, ${150 + Math.random() * 105}, 255, ` :
-                    `rgba(255, ${150 + Math.random() * 105}, ${150 + Math.random() * 105}, `;
-            }
-
-            update() {
-                this.z -= cameraSpeed * 2;
-
-                if (this.z < 1) {
-                    this.reset();
-                    this.z = 2000;
-                }
-            }
-
-            draw() {
-                const x = (this.x / this.z) * 600 + W / 2;
-                const y = (this.y / this.z) * 600 + H / 2;
-
-                if (x < -50 || x > W + 50 || y < -50 || y > H + 50) {
-                    return;
-                }
-
-                const size = (1 - this.z / 2000) * this.size * 3;
-                const opacity = Math.min((2000 - this.z) / 2000, 1);
-
-                // Star glow
-                const gradient = ctx.createRadialGradient(x, y, 0, x, y, size * 3);
-                gradient.addColorStop(0, this.color + opacity + ')');
-                gradient.addColorStop(0.3, this.color + (opacity * 0.5) + ')');
-                gradient.addColorStop(1, this.color + '0)');
-
-                ctx.fillStyle = gradient;
-                ctx.fillRect(x - size * 3, y - size * 3, size * 6, size * 6);
-
-                // Star core
-                ctx.fillStyle = this.color + opacity + ')';
-                ctx.beginPath();
-                ctx.arc(x, y, Math.max(size, 0.5), 0, Math.PI * 2);
-                ctx.fill();
-
-                // Motion blur
-                if (cameraSpeed > 1) {
-                    const prevZ = this.z + cameraSpeed * 2;
-                    const prevX = (this.x / prevZ) * 600 + W / 2;
-                    const prevY = (this.y / prevZ) * 600 + H / 2;
-
-                    ctx.strokeStyle = this.color + (opacity * 0.3) + ')';
-                    ctx.lineWidth = size * 0.5;
-                    ctx.beginPath();
-                    ctx.moveTo(prevX, prevY);
-                    ctx.lineTo(x, y);
-                    ctx.stroke();
-                }
-            }
-        }
-
-        // Asteroids/debris
-        class Asteroid {
-            constructor() {
-                this.reset();
-            }
-
-            reset() {
-                this.x = (Math.random() - 0.5) * W * 2;
-                this.y = (Math.random() - 0.5) * H * 2;
-                this.z = Math.random() * 1500 + 500;
-                this.rotationSpeed = (Math.random() - 0.5) * 0.05;
-                this.rotation = Math.random() * Math.PI * 2;
-                this.size = Math.random() * 4 + 2;
-                this.vertices = Math.floor(Math.random() * 4) + 5;
-            }
-
-            update() {
-                this.z -= cameraSpeed;
-                this.rotation += this.rotationSpeed;
-
-                if (this.z < 1) {
-                    this.reset();
-                    this.z = 2000;
-                }
-            }
-
-            draw() {
-                const x = (this.x / this.z) * 600 + W / 2;
-                const y = (this.y / this.z) * 600 + H / 2;
-
-                if (x < -100 || x > W + 100 || y < -100 || y > H + 100) {
-                    return;
-                }
-
-                const size = (1 - this.z / 2000) * this.size * 5;
-                const opacity = Math.min((2000 - this.z) / 2000, 1) * 0.6;
-
-                ctx.save();
-                ctx.translate(x, y);
-                ctx.rotate(this.rotation);
-
-                ctx.beginPath();
-                for (let i = 0; i < this.vertices; i++) {
-                    const angle = (i / this.vertices) * Math.PI * 2;
-                    const r = size * (0.8 + Math.random() * 0.4);
-                    const px = Math.cos(angle) * r;
-                    const py = Math.sin(angle) * r;
-                    if (i === 0) ctx.moveTo(px, py);
-                    else ctx.lineTo(px, py);
-                }
-                ctx.closePath();
-
-                ctx.fillStyle = `rgba(100, 100, 120, ${opacity})`;
-                ctx.fill();
-                ctx.strokeStyle = `rgba(150, 150, 180, ${opacity * 0.5})`;
-                ctx.lineWidth = 0.5;
-                ctx.stroke();
-
-                ctx.restore();
-            }
-        }
-
-        // Create particles
-        const stars = Array.from({ length: 1500 }, () => new Star());
-        const asteroids = Array.from({ length: 30 }, () => new Asteroid());
-
-        // Mouse interaction
+        // Mouse/Touch controls
         document.addEventListener('mousemove', (e) => {
-            mouseX = (e.clientX / W - 0.5) * 2;
-            mouseY = (e.clientY / H - 0.5) * 2;
+            mouseX = (e.clientX / window.innerWidth - 0.5) * 2;
+            mouseY = (e.clientY / window.innerHeight - 0.5) * 2;
         });
 
-        // Speed control with mouse wheel
-        document.addEventListener('wheel', (e) => {
-            e.preventDefault();
-            autoSpeedEnabled = false;
-            targetSpeed = Math.max(0.1, Math.min(targetSpeed + e.deltaY * 0.001, 10));
-        }, { passive: false });
+        let touchStartY = 0;
+        document.addEventListener('touchstart', (e) => {
+            touchStartY = e.touches[0].clientY;
+        });
 
-        // Update coordinates UI
-        function updateUI() {
-            document.getElementById('coordX').textContent = (mouseX * 100).toFixed(3);
-            document.getElementById('coordY').textContent = (mouseY * 100).toFixed(3);
-            document.getElementById('velocity').textContent = (cameraSpeed * 0.1).toFixed(2) + 'c';
-        }
+        document.addEventListener('touchmove', (e) => {
+            const touch = e.touches[0];
+            mouseX = (touch.clientX / window.innerWidth - 0.5) * 2;
+            mouseY = (touch.clientY / window.innerHeight - 0.5) * 2;
 
-        // Auto-speed variation
-        let autoSpeedTime = 0;
-        let autoSpeedEnabled = true;
-
-        // Animation loop
-        function animate() {
-            // Fade effect for motion blur
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
-            ctx.fillRect(0, 0, W, H);
-
-            // Auto-speed variation for dynamic movement
-            if (autoSpeedEnabled) {
-                autoSpeedTime += 0.005;
-                const speedVariation = Math.sin(autoSpeedTime) * 1.5;
-                targetSpeed = 2 + speedVariation + Math.abs(Math.sin(autoSpeedTime * 0.3)) * 2;
+            const deltaY = touchStartY - touch.clientY;
+            if (Math.abs(deltaY) > 50) {
+                autoSpeed = false;
+                targetSpeed = Math.max(0.1, Math.min(targetSpeed + deltaY * 0.001, 5));
+                touchStartY = touch.clientY;
             }
-
-            // Smooth speed transition
-            cameraSpeed += (targetSpeed - cameraSpeed) * 0.02;
-
-            // Add parallax effect based on mouse position
-            ctx.save();
-            ctx.translate(mouseX * 20, mouseY * 20);
-
-            // Update and draw
-            asteroids.forEach(asteroid => {
-                asteroid.update();
-                asteroid.draw();
-            });
-
-            stars.forEach(star => {
-                star.update();
-                star.draw();
-            });
-
-            ctx.restore();
-
-            updateUI();
-            requestAnimationFrame(animate);
-        }
-
-        // Resize handler
-        window.addEventListener('resize', () => {
-            W = canvas.width = window.innerWidth;
-            H = canvas.height = window.innerHeight;
         });
-
-        // Start animation
-        animate();
 
         // Keyboard controls
         document.addEventListener('keydown', (e) => {
             if (e.key === 'ArrowUp') {
-                autoSpeedEnabled = false;
-                targetSpeed = Math.min(targetSpeed + 0.5, 10);
+                autoSpeed = false;
+                targetSpeed = Math.min(targetSpeed + 0.2, 5);
             }
             if (e.key === 'ArrowDown') {
-                autoSpeedEnabled = false;
-                targetSpeed = Math.max(targetSpeed - 0.5, 0.1);
+                autoSpeed = false;
+                targetSpeed = Math.max(targetSpeed - 0.2, 0.1);
             }
             if (e.key === ' ') {
-                autoSpeedEnabled = !autoSpeedEnabled;
-                if (!autoSpeedEnabled) {
-                    targetSpeed = targetSpeed > 2 ? 0.5 : 5;
-                }
+                autoSpeed = !autoSpeed;
             }
         });
 
-        // Mobile touch controls
-        let touchStartY = 0;
-        let touchStartX = 0;
-        let isTouching = false;
-
-        canvas.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            isTouching = true;
-            touchStartY = e.touches[0].clientY;
-            touchStartX = e.touches[0].clientX;
-        }, { passive: false });
-
-        canvas.addEventListener('touchmove', (e) => {
-            e.preventDefault();
-            if (!isTouching) return;
-
-            const touch = e.touches[0];
-            const deltaY = touchStartY - touch.clientY;
-            const deltaX = touch.clientX - touchStartX;
-
-            // Swipe up/down to control speed
-            if (Math.abs(deltaY) > 50) {
-                autoSpeedEnabled = false;
-                if (deltaY > 0) {
-                    targetSpeed = Math.min(targetSpeed + 0.1, 10);
-                } else {
-                    targetSpeed = Math.max(targetSpeed - 0.1, 0.1);
-                }
-                touchStartY = touch.clientY;
-            }
-
-            // Update mouse position for parallax
-            mouseX = (touch.clientX / W - 0.5) * 2;
-            mouseY = (touch.clientY / H - 0.5) * 2;
-        }, { passive: false });
-
-        canvas.addEventListener('touchend', () => {
-            isTouching = false;
-        });
-
-        // Double tap to toggle auto-speed
-        let lastTap = 0;
-        canvas.addEventListener('touchend', (e) => {
-            const currentTime = new Date().getTime();
-            const tapLength = currentTime - lastTap;
-            if (tapLength < 300 && tapLength > 0) {
-                autoSpeedEnabled = !autoSpeedEnabled;
-                if (!autoSpeedEnabled) {
-                    targetSpeed = targetSpeed > 2 ? 0.5 : 5;
-                }
-            }
-            lastTap = currentTime;
-        });
-
-        // Gyroscope support for mobile
-        let gyroSupported = false;
-        let gyroAlpha = 0;
-        let gyroBeta = 0;
-        let gyroGamma = 0;
-
+        // Gyroscope for mobile
         if (window.DeviceOrientationEvent) {
-            // Request permission on iOS 13+
             if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-                // Add button for iOS permission
-                const permBtn = document.createElement('button');
-                permBtn.textContent = 'Enable Motion';
-                permBtn.style.cssText = `
-                    position: fixed;
-                    top: 50%;
-                    left: 50%;
-                    transform: translate(-50%, -50%);
-                    padding: 15px 30px;
-                    background: rgba(0, 255, 255, 0.2);
-                    border: 2px solid rgba(0, 255, 255, 0.5);
-                    color: white;
-                    font-family: 'Courier New', monospace;
-                    font-size: 14px;
-                    cursor: pointer;
-                    z-index: 1000;
-                    backdrop-filter: blur(10px);
-                `;
-                document.body.appendChild(permBtn);
-
-                permBtn.addEventListener('click', () => {
+                document.addEventListener('touchstart', () => {
                     DeviceOrientationEvent.requestPermission()
                         .then(response => {
                             if (response === 'granted') {
-                                gyroSupported = true;
-                                permBtn.remove();
                                 window.addEventListener('deviceorientation', handleOrientation);
                             }
                         })
                         .catch(console.error);
-                });
+                }, { once: true });
             } else {
-                // Non-iOS devices
-                gyroSupported = true;
                 window.addEventListener('deviceorientation', handleOrientation);
             }
         }
 
         function handleOrientation(event) {
-            if (!gyroSupported) return;
-
-            gyroAlpha = event.alpha || 0;  // Z-axis (0-360)
-            gyroBeta = event.beta || 0;    // X-axis (-180 to 180)
-            gyroGamma = event.gamma || 0;  // Y-axis (-90 to 90)
-
-            // Use gyroscope for parallax on mobile
             if (window.innerWidth < 768) {
-                mouseX = (gyroGamma / 90) * 1.5;
-                mouseY = ((gyroBeta - 45) / 90) * 1.5;
-
-                // Clamp values
-                mouseX = Math.max(-2, Math.min(2, mouseX));
-                mouseY = Math.max(-2, Math.min(2, mouseY));
-
-                // Auto-adjust speed based on tilt intensity
-                const tiltIntensity = Math.abs(gyroBeta - 45) / 45;
-                if (tiltIntensity > 0.3) {
-                    targetSpeed = Math.min(1 + tiltIntensity * 2, 10);
-                }
+                mouseX = (event.gamma / 90) * 0.5;
+                mouseY = ((event.beta - 45) / 90) * 0.5;
             }
         }
 
-        // Pinch to zoom speed control
-        let initialPinchDistance = 0;
-        canvas.addEventListener('touchstart', (e) => {
-            if (e.touches.length === 2) {
-                const touch1 = e.touches[0];
-                const touch2 = e.touches[1];
-                initialPinchDistance = Math.hypot(
-                    touch2.clientX - touch1.clientX,
-                    touch2.clientY - touch1.clientY
-                );
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Auto-speed variation
+            if (autoSpeed) {
+                autoSpeedTime += 0.003;
+                const variation = Math.sin(autoSpeedTime) * 0.3;
+                targetSpeed = 0.8 + variation + Math.abs(Math.sin(autoSpeedTime * 0.2)) * 0.5;
             }
-        });
 
-        canvas.addEventListener('touchmove', (e) => {
-            if (e.touches.length === 2) {
-                e.preventDefault();
-                const touch1 = e.touches[0];
-                const touch2 = e.touches[1];
-                const currentDistance = Math.hypot(
-                    touch2.clientX - touch1.clientX,
-                    touch2.clientY - touch1.clientY
-                );
+            // Smooth speed transition
+            speed += (targetSpeed - speed) * 0.05;
 
-                const delta = currentDistance - initialPinchDistance;
-                if (Math.abs(delta) > 10) {
-                    if (delta > 0) {
-                        targetSpeed = Math.min(targetSpeed + 0.05, 10);
-                    } else {
-                        targetSpeed = Math.max(targetSpeed - 0.05, 0.1);
-                    }
-                    initialPinchDistance = currentDistance;
+            // Camera rotation based on mouse
+            targetRotationY = mouseX * 0.3;
+            targetRotationX = mouseY * 0.3;
+            camera.rotation.y += (targetRotationY - camera.rotation.y) * 0.05;
+            camera.rotation.x += (targetRotationX - camera.rotation.x) * 0.05;
+
+            // Move forward
+            camera.position.z -= speed;
+
+            // Stars movement
+            const starPositions = stars.geometry.attributes.position.array;
+            for (let i = 0; i < starPositions.length; i += 3) {
+                starPositions[i + 2] += speed;
+
+                // Reset stars that are too close
+                if (starPositions[i + 2] > 500) {
+                    starPositions[i + 2] = -500;
                 }
             }
-        });
+            stars.geometry.attributes.position.needsUpdate = true;
+            stars.rotation.y += 0.0001;
 
-        // Vibration feedback for mobile
-        function vibrate(duration = 10) {
-            if ('vibrate' in navigator) {
-                navigator.vibrate(duration);
-            }
+            // Nebula clouds
+            nebulaClouds.forEach((cloud, i) => {
+                cloud.position.z += speed * 0.3;
+                cloud.rotation.y += 0.001;
+                cloud.rotation.x += 0.0005;
+
+                if (cloud.position.z > 300) {
+                    cloud.position.z = -500;
+                }
+            });
+
+            // Asteroids
+            asteroids.forEach(asteroid => {
+                asteroid.position.z += speed;
+                asteroid.rotation.x += asteroid.userData.rotationSpeed.x;
+                asteroid.rotation.y += asteroid.userData.rotationSpeed.y;
+                asteroid.rotation.z += asteroid.userData.rotationSpeed.z;
+
+                if (asteroid.position.z > 50) {
+                    asteroid.position.z = -1000;
+                    asteroid.position.x = (Math.random() - 0.5) * 500;
+                    asteroid.position.y = (Math.random() - 0.5) * 500;
+                }
+            });
+
+            // Update HUD
+            document.getElementById('speed').textContent = (speed * 2).toFixed(1) + 'c';
+
+            composer.render();
         }
 
-        // Add vibration on speed changes
-        let lastSpeed = targetSpeed;
-        setInterval(() => {
-            if (Math.abs(targetSpeed - lastSpeed) > 0.5) {
-                vibrate(20);
-                lastSpeed = targetSpeed;
-            }
-        }, 100);
+        // Resize handler
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Start
+        document.getElementById('loading').style.display = 'none';
+        animate();
     </script>
 </body>
 </html>
