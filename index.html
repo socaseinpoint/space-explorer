@@ -165,9 +165,21 @@
             height: 100%;
         }
 
+        .controls {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 10px;
+            z-index: 100;
+            pointer-events: none;
+            line-height: 1.6;
+        }
+
         @media (max-width: 768px) {
             .info h1 { font-size: 2rem; }
             .ui { font-size: 10px; }
+            .controls { font-size: 9px; }
         }
     </style>
 </head>
@@ -188,6 +200,14 @@
         <div>X: <span id="coordX">0.000</span></div>
         <div>Y: <span id="coordY">0.000</span></div>
         <div>VELOCITY: <span id="velocity">0.00c</span></div>
+    </div>
+
+    <div class="controls">
+        <div>🖱️ MOUSE: Move to look around</div>
+        <div>⌨️ KEYS: ↑↓ Speed | SPACE Toggle</div>
+        <div>📱 TOUCH: Swipe up/down | Double tap</div>
+        <div>🎯 GYRO: Tilt device to control</div>
+        <div>🤏 PINCH: Zoom speed control</div>
     </div>
 
     <div class="info">
@@ -407,6 +427,178 @@
             if (e.key === 'ArrowDown') targetSpeed = Math.max(targetSpeed - 0.5, 0.1);
             if (e.key === ' ') targetSpeed = targetSpeed > 2 ? 0.5 : 5;
         });
+
+        // Mobile touch controls
+        let touchStartY = 0;
+        let touchStartX = 0;
+        let isTouching = false;
+
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            isTouching = true;
+            touchStartY = e.touches[0].clientY;
+            touchStartX = e.touches[0].clientX;
+        }, { passive: false });
+
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (!isTouching) return;
+
+            const touch = e.touches[0];
+            const deltaY = touchStartY - touch.clientY;
+            const deltaX = touch.clientX - touchStartX;
+
+            // Swipe up/down to control speed
+            if (Math.abs(deltaY) > 50) {
+                if (deltaY > 0) {
+                    targetSpeed = Math.min(targetSpeed + 0.1, 10);
+                } else {
+                    targetSpeed = Math.max(targetSpeed - 0.1, 0.1);
+                }
+                touchStartY = touch.clientY;
+            }
+
+            // Update mouse position for parallax
+            mouseX = (touch.clientX / W - 0.5) * 2;
+            mouseY = (touch.clientY / H - 0.5) * 2;
+        }, { passive: false });
+
+        canvas.addEventListener('touchend', () => {
+            isTouching = false;
+        });
+
+        // Double tap to toggle speed
+        let lastTap = 0;
+        canvas.addEventListener('touchend', (e) => {
+            const currentTime = new Date().getTime();
+            const tapLength = currentTime - lastTap;
+            if (tapLength < 300 && tapLength > 0) {
+                targetSpeed = targetSpeed > 2 ? 0.5 : 5;
+            }
+            lastTap = currentTime;
+        });
+
+        // Gyroscope support for mobile
+        let gyroSupported = false;
+        let gyroAlpha = 0;
+        let gyroBeta = 0;
+        let gyroGamma = 0;
+
+        if (window.DeviceOrientationEvent) {
+            // Request permission on iOS 13+
+            if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+                // Add button for iOS permission
+                const permBtn = document.createElement('button');
+                permBtn.textContent = 'Enable Motion';
+                permBtn.style.cssText = `
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    padding: 15px 30px;
+                    background: rgba(0, 255, 255, 0.2);
+                    border: 2px solid rgba(0, 255, 255, 0.5);
+                    color: white;
+                    font-family: 'Courier New', monospace;
+                    font-size: 14px;
+                    cursor: pointer;
+                    z-index: 1000;
+                    backdrop-filter: blur(10px);
+                `;
+                document.body.appendChild(permBtn);
+
+                permBtn.addEventListener('click', () => {
+                    DeviceOrientationEvent.requestPermission()
+                        .then(response => {
+                            if (response === 'granted') {
+                                gyroSupported = true;
+                                permBtn.remove();
+                                window.addEventListener('deviceorientation', handleOrientation);
+                            }
+                        })
+                        .catch(console.error);
+                });
+            } else {
+                // Non-iOS devices
+                gyroSupported = true;
+                window.addEventListener('deviceorientation', handleOrientation);
+            }
+        }
+
+        function handleOrientation(event) {
+            if (!gyroSupported) return;
+
+            gyroAlpha = event.alpha || 0;  // Z-axis (0-360)
+            gyroBeta = event.beta || 0;    // X-axis (-180 to 180)
+            gyroGamma = event.gamma || 0;  // Y-axis (-90 to 90)
+
+            // Use gyroscope for parallax on mobile
+            if (window.innerWidth < 768) {
+                mouseX = (gyroGamma / 90) * 1.5;
+                mouseY = ((gyroBeta - 45) / 90) * 1.5;
+
+                // Clamp values
+                mouseX = Math.max(-2, Math.min(2, mouseX));
+                mouseY = Math.max(-2, Math.min(2, mouseY));
+
+                // Auto-adjust speed based on tilt intensity
+                const tiltIntensity = Math.abs(gyroBeta - 45) / 45;
+                if (tiltIntensity > 0.3) {
+                    targetSpeed = Math.min(1 + tiltIntensity * 2, 10);
+                }
+            }
+        }
+
+        // Pinch to zoom speed control
+        let initialPinchDistance = 0;
+        canvas.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 2) {
+                const touch1 = e.touches[0];
+                const touch2 = e.touches[1];
+                initialPinchDistance = Math.hypot(
+                    touch2.clientX - touch1.clientX,
+                    touch2.clientY - touch1.clientY
+                );
+            }
+        });
+
+        canvas.addEventListener('touchmove', (e) => {
+            if (e.touches.length === 2) {
+                e.preventDefault();
+                const touch1 = e.touches[0];
+                const touch2 = e.touches[1];
+                const currentDistance = Math.hypot(
+                    touch2.clientX - touch1.clientX,
+                    touch2.clientY - touch1.clientY
+                );
+
+                const delta = currentDistance - initialPinchDistance;
+                if (Math.abs(delta) > 10) {
+                    if (delta > 0) {
+                        targetSpeed = Math.min(targetSpeed + 0.05, 10);
+                    } else {
+                        targetSpeed = Math.max(targetSpeed - 0.05, 0.1);
+                    }
+                    initialPinchDistance = currentDistance;
+                }
+            }
+        });
+
+        // Vibration feedback for mobile
+        function vibrate(duration = 10) {
+            if ('vibrate' in navigator) {
+                navigator.vibrate(duration);
+            }
+        }
+
+        // Add vibration on speed changes
+        let lastSpeed = targetSpeed;
+        setInterval(() => {
+            if (Math.abs(targetSpeed - lastSpeed) > 0.5) {
+                vibrate(20);
+                lastSpeed = targetSpeed;
+            }
+        }, 100);
     </script>
 </body>
 </html>
