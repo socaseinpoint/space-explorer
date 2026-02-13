@@ -203,11 +203,11 @@
     </div>
 
     <div class="controls">
+        <div>🚀 AUTO-PILOT: Active (Double tap/SPACE to toggle)</div>
         <div>🖱️ MOUSE: Move to look around</div>
-        <div>⌨️ KEYS: ↑↓ Speed | SPACE Toggle</div>
-        <div>📱 TOUCH: Swipe up/down | Double tap</div>
-        <div>🎯 GYRO: Tilt device to control</div>
-        <div>🤏 PINCH: Zoom speed control</div>
+        <div>⌨️ KEYS: ↑↓ Manual speed</div>
+        <div>📱 TOUCH: Swipe to control</div>
+        <div>🎯 GYRO: Tilt for parallax</div>
     </div>
 
     <div class="info">
@@ -224,10 +224,10 @@
 
         // Camera and movement
         let cameraZ = 0;
-        let cameraSpeed = 0.5;
+        let cameraSpeed = 2;
         let mouseX = 0;
         let mouseY = 0;
-        let targetSpeed = 0.5;
+        let targetSpeed = 2;
 
         // Particle system for stars
         class Star {
@@ -372,6 +372,7 @@
         // Speed control with mouse wheel
         document.addEventListener('wheel', (e) => {
             e.preventDefault();
+            autoSpeedEnabled = false;
             targetSpeed = Math.max(0.1, Math.min(targetSpeed + e.deltaY * 0.001, 10));
         }, { passive: false });
 
@@ -382,11 +383,22 @@
             document.getElementById('velocity').textContent = (cameraSpeed * 0.1).toFixed(2) + 'c';
         }
 
+        // Auto-speed variation
+        let autoSpeedTime = 0;
+        let autoSpeedEnabled = true;
+
         // Animation loop
         function animate() {
             // Fade effect for motion blur
             ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
             ctx.fillRect(0, 0, W, H);
+
+            // Auto-speed variation for dynamic movement
+            if (autoSpeedEnabled) {
+                autoSpeedTime += 0.005;
+                const speedVariation = Math.sin(autoSpeedTime) * 1.5;
+                targetSpeed = 2 + speedVariation + Math.abs(Math.sin(autoSpeedTime * 0.3)) * 2;
+            }
 
             // Smooth speed transition
             cameraSpeed += (targetSpeed - cameraSpeed) * 0.02;
@@ -423,9 +435,20 @@
 
         // Keyboard controls
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowUp') targetSpeed = Math.min(targetSpeed + 0.5, 10);
-            if (e.key === 'ArrowDown') targetSpeed = Math.max(targetSpeed - 0.5, 0.1);
-            if (e.key === ' ') targetSpeed = targetSpeed > 2 ? 0.5 : 5;
+            if (e.key === 'ArrowUp') {
+                autoSpeedEnabled = false;
+                targetSpeed = Math.min(targetSpeed + 0.5, 10);
+            }
+            if (e.key === 'ArrowDown') {
+                autoSpeedEnabled = false;
+                targetSpeed = Math.max(targetSpeed - 0.5, 0.1);
+            }
+            if (e.key === ' ') {
+                autoSpeedEnabled = !autoSpeedEnabled;
+                if (!autoSpeedEnabled) {
+                    targetSpeed = targetSpeed > 2 ? 0.5 : 5;
+                }
+            }
         });
 
         // Mobile touch controls
@@ -450,6 +473,7 @@
 
             // Swipe up/down to control speed
             if (Math.abs(deltaY) > 50) {
+                autoSpeedEnabled = false;
                 if (deltaY > 0) {
                     targetSpeed = Math.min(targetSpeed + 0.1, 10);
                 } else {
@@ -467,13 +491,16 @@
             isTouching = false;
         });
 
-        // Double tap to toggle speed
+        // Double tap to toggle auto-speed
         let lastTap = 0;
         canvas.addEventListener('touchend', (e) => {
             const currentTime = new Date().getTime();
             const tapLength = currentTime - lastTap;
             if (tapLength < 300 && tapLength > 0) {
-                targetSpeed = targetSpeed > 2 ? 0.5 : 5;
+                autoSpeedEnabled = !autoSpeedEnabled;
+                if (!autoSpeedEnabled) {
+                    targetSpeed = targetSpeed > 2 ? 0.5 : 5;
+                }
             }
             lastTap = currentTime;
         });
